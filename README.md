@@ -212,12 +212,22 @@ PARAMETER STYLE GENERAL;
 Then call it from FastAPI:
 
 ```python
+from pydantic import BaseModel, Field
+
+
+class RunProgramRequest(BaseModel):
+    param1: str = Field(..., max_length=6)
+    param2: int
+
+
 @router.post("/runpgm")
-def run_program(param1: str, param2: int):
+def run_program(body: RunProgramRequest):
     try:
-        with pyodbc.connect(os.environ["DB_DSN"]) as conn:  # commits on clean exit
-            conn.cursor().execute("CALL MYLIB.MYPGM_SQL(?, ?)", param1, param2)
-    except pyodbc.Error:
+        with get_connection() as conn:  # commits on clean exit
+            conn.cursor().execute(
+                "CALL MYLIB.MYPGM_SQL(?, ?)", body.param1, body.param2
+            )
+    except (pyodbc.Error, RuntimeError):
         log.exception("Procedure call failed")
         raise HTTPException(status_code=502, detail="Procedure call failed")
     return {"status": "executed"}
@@ -226,7 +236,7 @@ def run_program(param1: str, param2: int):
 Notes:
 
 - Do **not** use CL syntax such as `CALL MYLIB/MYPGM(...)` through SQL. In CL, the command is `CALL PGM(MYLIB/MYPGM) PARM('ABC123' 5)`.
-- pyodbc runs with autocommit **off** by default. Writes made by a procedure are only persisted if the transaction is committed (here, when the `with` block exits cleanly). Take care if your procedure uses commitment control.
+- `get_connection()` runs with autocommit **off**. Writes made by a procedure are only persisted if the transaction is committed (here, when the `with` block exits cleanly). Take care if your procedure uses commitment control.
 - To run a CL command from SQL, use `CALL QSYS2.QCMDEXC('your CL command')`. This is powerful, so never build the command string from user input.
 
 ---
