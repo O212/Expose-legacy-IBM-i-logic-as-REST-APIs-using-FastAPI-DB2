@@ -1,0 +1,5 @@
+# Minimum versions; pin exact versions once tested in your environment.
+fastapi>=0.110
+uvicorn>=0.29
+pyodbc>=5.0
+python-dotenv>=1.0
