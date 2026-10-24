@@ -299,4 +299,4 @@ Feedback is very welcome, especially from RPG/RPGLE developers, IBM i architects
 
 ## License
 
-No license has been added yet. Add a `LICENSE` file (for example MIT or Apache-2.0) before encouraging reuse.
+MIT License. See the [LICENSE](LICENSE) file.
