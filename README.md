@@ -155,10 +155,11 @@ INSERT INTO MYLIB.ORDERS VALUES (1001, 'Sample item');
 
 ```python
 import logging
-import os
 
 import pyodbc
 from fastapi import APIRouter, HTTPException
+
+from app.db import get_connection
 
 router = APIRouter()
 log = logging.getLogger("api")
@@ -167,14 +168,14 @@ log = logging.getLogger("api")
 @router.get("/orders/{order_id}")
 def get_order(order_id: int):
     try:
-        with pyodbc.connect(os.environ["DB_DSN"]) as conn:
+        with get_connection() as conn:
             cur = conn.cursor()
             cur.execute(
                 "SELECT ORDER_ID, ITEM FROM MYLIB.ORDERS WHERE ORDER_ID = ?",
                 order_id,
             )
             row = cur.fetchone()
-    except pyodbc.Error:
+    except (pyodbc.Error, RuntimeError):
         log.exception("Db2 error while reading order")
         raise HTTPException(status_code=502, detail="Database error")
 
@@ -182,15 +183,15 @@ def get_order(order_id: int):
         raise HTTPException(status_code=404, detail="Order not found")
 
     return {"order_id": row.ORDER_ID, "item": row.ITEM}
+
 ```
 
 Notes:
 
-- The connection is closed automatically by the `with` block.
+- `get_connection()` (in `app/db.py`) commits on success, rolls back on error and always closes the connection. Note that pyodbc's own `with pyodbc.connect(...)` block commits but does not close it.
 - A missing record returns HTTP 404 instead of crashing.
 - Column names are selected explicitly instead of `SELECT *`, so the result does not depend on column order.
 
----
 
 ## Calling RPG or SQL programs
 
