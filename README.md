@@ -247,11 +247,12 @@ Return proper HTTP status codes and keep database details out of API responses. 
 
 ```python
 try:
-    with pyodbc.connect(os.environ["DB_DSN"]) as conn:
+    with get_connection() as conn:
         ...
-except pyodbc.Error:
+except (pyodbc.Error, RuntimeError):
     log.exception("Db2 error")
     raise HTTPException(status_code=502, detail="Database error")
+
 ```
 
 Returning `str(e)` to the caller can leak host names, library names and other internal details.
